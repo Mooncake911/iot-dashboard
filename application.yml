@@ -1,5 +1,5 @@
 dashboard:
-  mock-mode: ${MOCK_MODE:true}
+  mock-mode: ${MOCK_MODE:false}
   services:
     simulator:
       url: ${SIMULATOR_API_URL:http://localhost:8080}
