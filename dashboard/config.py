@@ -15,10 +15,10 @@ class DashboardConfig:
     mock_mode: bool
     simulator_api_url: str
     analytics_api_url: str
-    controller_api_url: str
     mongo_uri: str
     mongo_db: str
     mongo_alerts_collection: str
+    mongo_analytics_collection: str
     refresh_seconds_default: int
     alerts_limit_default: int
 
@@ -146,13 +146,11 @@ def load_config(config_path: str = "application.yml") -> DashboardConfig:
     
     simulator_api_url = services.get('simulator', {}).get('url')
     analytics_api_url = services.get('analytics', {}).get('url')
-    controller_api_url = services.get('controller', {}).get('url')
     
-    if not mock_mode and not all([simulator_api_url, analytics_api_url, controller_api_url]):
+    if not mock_mode and not all([simulator_api_url, analytics_api_url]):
         raise KeyError(
             "Missing service URLs in configuration. Required: "
-            "dashboard.services.simulator.url, dashboard.services.analytics.url, "
-            "dashboard.services.controller.url"
+            "dashboard.services.simulator.url, dashboard.services.analytics.url"
         )
     
     # MongoDB configuration
@@ -163,12 +161,14 @@ def load_config(config_path: str = "application.yml") -> DashboardConfig:
     mongo_uri = mongodb.get('uri')
     mongo_db = mongodb.get('database')
     mongo_alerts_collection = mongodb.get('collections', {}).get('alerts')
+    mongo_analytics_collection = mongodb.get('collections', {}).get('analytics')
     
-    if not mock_mode and not all([mongo_uri, mongo_db, mongo_alerts_collection]):
+    if not mock_mode and not all([mongo_uri, mongo_db, mongo_alerts_collection, mongo_analytics_collection]):
         raise KeyError(
             "Missing MongoDB configuration. Required: "
             "dashboard.mongodb.uri, dashboard.mongodb.database, "
-            "dashboard.mongodb.collections.alerts"
+            "dashboard.mongodb.collections.alerts, "
+            "dashboard.mongodb.collections.analytics"
         )
     
     # UI configuration
@@ -189,10 +189,10 @@ def load_config(config_path: str = "application.yml") -> DashboardConfig:
         mock_mode=mock_mode,
         simulator_api_url=simulator_api_url or "",
         analytics_api_url=analytics_api_url or "",
-        controller_api_url=controller_api_url or "",
         mongo_uri=mongo_uri or "",
         mongo_db=mongo_db or "",
         mongo_alerts_collection=mongo_alerts_collection or "",
+        mongo_analytics_collection=mongo_analytics_collection or "",
         refresh_seconds_default=refresh_seconds_default,
         alerts_limit_default=alerts_limit_default,
     )
