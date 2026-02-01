@@ -5,14 +5,13 @@ dashboard:
       url: ${SIMULATOR_API_URL:http://localhost:8080}
     analytics:
       url: ${ANALYTICS_API_URL:http://localhost:8081}
-    controller:
-      url: ${CONTROLLER_API_URL:http://localhost:8082}
   
   mongodb:
     uri: ${MONGO_URI:mongodb://admin:admin@localhost:27017/iot_db?authSource=admin}
     database: ${MONGO_DB:iot_db}
     collections:
       alerts: ${MONGO_ALERTS_COLLECTION:alerts}
+      analytics: ${MONGO_ANALYTICS_COLLECTION:analytics}
   
   ui:
     refresh-seconds-default: ${REFRESH_SECONDS_DEFAULT:2}

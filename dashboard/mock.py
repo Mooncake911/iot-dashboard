@@ -175,6 +175,16 @@ class MockMongoAlerts:
         pass
 
 
+class MockMongoAnalytics:
+    """Mock MongoDB analytics generator for local development."""
+
+    @classmethod
+    def fetch_analytics_history(cls, mongo_uri: str, mongo_db: str, collection: str, limit: int) -> List[Dict[str, Any]]:
+        """Generate fake analytics history for display."""
+        from dashboard.mock_data import generate_fake_analytics_list
+        return generate_fake_analytics_list(limit)
+
+
 def get_mock_config() -> Dict[str, Any]:
     """Get a mock configuration for local development."""
     from dashboard.mock_data import get_default_mock_config
