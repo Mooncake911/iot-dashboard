@@ -64,15 +64,33 @@ def generate_fake_analytics_point(index: int, now: datetime) -> Dict[str, Any]:
         "deviceId": 1,
         "timestamp": timestamp.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
         "metrics": {
-            "averageBattery": round(random.uniform(50, 95) - index * 0.1, 2),
-            "averageSignal": round(random.uniform(60, 90) + random.uniform(-5, 5), 2),
-            "onlineDevices": 45.0 + random.randint(-5, 5),
             "totalDevices": 50.0,
-            "type.SENSOR": 25.0,
-            "type.ACTUATOR": 15.0,
-            "type.GATEWAY": 10.0,
-            "manufacturer.ACME": 20.0,
-            "manufacturer.GLOBEX": 30.0
+            "onlineDevices": 45.0 + random.randint(-5, 5),
+            "coverageVolume": 1000.0,
+            "battery": {
+                "avg": round(random.uniform(50, 95) - index * 0.1, 2),
+                "min": 20.0,
+                "max": 100.0
+            },
+            "signal": {
+                "avg": round(random.uniform(60, 90) + random.uniform(-5, 5), 2),
+                "min": 10.0,
+                "max": 95.0
+            },
+            "heartbeat": {
+                "avg": round(random.uniform(0.5, 5.0), 2),
+                "min": 0.0,
+                "max": 10.0
+            },
+            "byType": {
+                "SENSOR": 25.0,
+                "ACTUATOR": 15.0,
+                "GATEWAY": 10.0
+            },
+            "byManufacturer": {
+                "ACME": 20.0,
+                "GLOBEX": 30.0
+            }
         }
     }
 

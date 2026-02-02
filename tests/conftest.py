@@ -17,15 +17,16 @@ def mock_config_data():
     # Leaving them close to the original for consistency with existing tests.
     config['dashboard']['services']['simulator']['url'] = 'http://test-simulator:8080'
     config['dashboard']['services']['analytics']['url'] = 'http://test-analytics:8081'
-    config['dashboard']['services']['controller']['url'] = 'http://test-controller:8082'
 
     # Override MongoDB settings to match test expectations
     config['dashboard']['mongodb']['uri'] = 'mongodb://test:test@localhost:27017/test_db'
     config['dashboard']['mongodb']['database'] = 'test_db'
     config['dashboard']['mongodb']['collections']['alerts'] = 'test_alerts'
+    config['dashboard']['mongodb']['collections']['analytics'] = 'test_analytics'
 
     # Override UI settings to match test expectations
     config['dashboard']['ui']['alerts-limit-default'] = 100
+    config['dashboard']['ui']['analytics-limit-default'] = 200
 
     return config
 
@@ -59,7 +60,7 @@ def sample_alerts():
 @pytest.fixture(autouse=True)
 def reset_mongo_client_state():
     """Reset the MongoDB client global state before each test."""
-    import dashboard.mongo_alerts as mongo_module
+    import dashboard.mongo.alerts as mongo_module
 
     # Reset global state
     mongo_module._mongo_client = None

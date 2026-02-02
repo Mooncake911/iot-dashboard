@@ -117,12 +117,13 @@ class TestConfigLoading:
             assert config.mock_mode is False
             assert config.simulator_api_url == 'http://test-simulator:8080'
             assert config.analytics_api_url == 'http://test-analytics:8081'
-            assert config.controller_api_url == 'http://test-controller:8082'
             assert config.mongo_uri == 'mongodb://test:test@localhost:27017/test_db'
             assert config.mongo_db == 'test_db'
             assert config.mongo_alerts_collection == 'test_alerts'
+            assert config.mongo_analytics_collection == 'test_analytics'
             assert config.refresh_seconds_default == 5
             assert config.alerts_limit_default == 100
+            assert config.analytics_limit_default == 200
         finally:
             Path(temp_path).unlink()
 
@@ -179,16 +180,16 @@ class TestConfigLoading:
                     'services': {
                         'simulator': {'url': 'http://test:8080'},
                         'analytics': {},  # Missing URL
-                        'controller': {'url': 'http://test:8082'}
                     },
                     'mongodb': {
                         'uri': 'mongodb://test',
                         'database': 'test_db',
-                        'collections': {'alerts': 'alerts'}
+                        'collections': {'alerts': 'alerts', 'analytics': 'analytics'}
                     },
                     'ui': {
                         'refresh-seconds-default': 2,
-                        'alerts-limit-default': 50
+                        'alerts-limit-default': 50,
+                        'analytics-limit-default': 100
                     }
                 }
             }
@@ -208,8 +209,7 @@ class TestConfigLoading:
                 'dashboard': {
                     'services': {
                         'simulator': {'url': 'http://test:8080'},
-                        'analytics': {'url': 'http://test:8081'},
-                        'controller': {'url': 'http://test:8082'}
+                        'analytics': {'url': 'http://test:8081'}
                     },
                     'mongodb': {
                         'uri': 'mongodb://test',
@@ -217,7 +217,8 @@ class TestConfigLoading:
                     },
                     'ui': {
                         'refresh-seconds-default': 2,
-                        'alerts-limit-default': 50
+                        'alerts-limit-default': 50,
+                        'analytics-limit-default': 100
                     }
                 }
             }
@@ -237,17 +238,17 @@ class TestConfigLoading:
                 'dashboard': {
                     'services': {
                         'simulator': {'url': 'http://test:8080'},
-                        'analytics': {'url': 'http://test:8081'},
-                        'controller': {'url': 'http://test:8082'}
+                        'analytics': {'url': 'http://test:8081'}
                     },
                     'mongodb': {
                         'uri': 'mongodb://test',
                         'database': 'test_db',
-                        'collections': {'alerts': 'alerts'}
+                        'collections': {'alerts': 'alerts', 'analytics': 'analytics'}
                     },
                     'ui': {
                         'refresh-seconds-default': 'not_a_number',  # Invalid
-                        'alerts-limit-default': 50
+                        'alerts-limit-default': 50,
+                        'analytics-limit-default': 100
                     }
                 }
             }

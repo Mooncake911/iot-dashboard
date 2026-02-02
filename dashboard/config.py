@@ -21,6 +21,7 @@ class DashboardConfig:
     mongo_analytics_collection: str
     refresh_seconds_default: int
     alerts_limit_default: int
+    analytics_limit_default: int
 
 
 def _resolve_env_placeholder(value: str) -> str:
@@ -177,12 +178,13 @@ def load_config(config_path: str = "application.yml") -> DashboardConfig:
         raise KeyError("Missing 'dashboard.ui' section in configuration")
     
     try:
-        refresh_seconds_default = int(ui.get('refresh-seconds-default'))
-        alerts_limit_default = int(ui.get('alerts-limit-default'))
+        refresh_seconds_default = int(ui.get('refresh-seconds-default', 5))
+        alerts_limit_default = int(ui.get('alerts-limit-default', 50))
+        analytics_limit_default = int(ui.get('analytics-limit-default', 100))
     except (TypeError, ValueError) as e:
         raise ValueError(
             f"Invalid UI configuration values: {e}. "
-            "refresh-seconds-default and alerts-limit-default must be integers."
+            "refresh-seconds-default, alerts-limit-default and analytics-limit-default must be integers."
         )
     
     return DashboardConfig(
@@ -195,4 +197,5 @@ def load_config(config_path: str = "application.yml") -> DashboardConfig:
         mongo_analytics_collection=mongo_analytics_collection or "",
         refresh_seconds_default=refresh_seconds_default,
         alerts_limit_default=alerts_limit_default,
+        analytics_limit_default=analytics_limit_default,
     )

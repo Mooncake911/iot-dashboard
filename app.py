@@ -1,11 +1,16 @@
 import logging
 
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 
 from dashboard.config import load_config
 from dashboard.ui.alerts_tab import render_alerts_tab
 from dashboard.ui.data_tab import render_data_monitor_tab
 from dashboard.ui.analytics_tab import render_analytics_tab
+from dashboard.ui.utils.styles import apply_custom_styles
+
+# Apply custom styles for premium look
+apply_custom_styles()
 
 # Configure logging
 logging.basicConfig(
@@ -37,6 +42,14 @@ except Exception as e:
     st.error(f"❌ Failed to load configuration: {e}")
     logger.error(f"Configuration loading failed: {e}")
     st.stop()
+
+# Initialize session state for UX/Controls
+if 'refresh_seconds' not in st.session_state:
+    st.session_state.refresh_seconds = cfg.refresh_seconds_default
+
+# Auto-refresh logic
+refresh_interval = st.session_state.refresh_seconds * 1000
+st_autorefresh(interval=refresh_interval, key="data_refresh")
 
 # Initialize session state for configuration
 if 'simulator_api' not in st.session_state:
@@ -127,7 +140,8 @@ with tab_analytics:
         analytics_api=st.session_state.analytics_api,
         mongo_uri=st.session_state.mongo_uri,
         mongo_db=st.session_state.mongo_db,
-        mongo_collection=st.session_state.mongo_analytics_collection
+        mongo_collection=st.session_state.mongo_analytics_collection,
+        limit_default=cfg.analytics_limit_default
     )
 
 with tab_alerts:
@@ -135,7 +149,7 @@ with tab_alerts:
         mongo_uri=st.session_state.mongo_uri,
         mongo_db=st.session_state.mongo_db,
         mongo_alerts_collection=st.session_state.mongo_alerts_collection,
-        refresh_default=cfg.refresh_seconds_default,
+        refresh_default=st.session_state.refresh_seconds,
         limit_default=cfg.alerts_limit_default,
     )
 

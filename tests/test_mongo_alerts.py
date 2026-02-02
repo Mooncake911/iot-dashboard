@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from pymongo.errors import ConnectionFailure
 
-from dashboard.mongo_alerts import get_mongo_client, fetch_alerts, close_mongo_client
+from dashboard.mongo.alerts import get_mongo_client, fetch_alerts, close_mongo_client
 
 
 class TestMongoClient:
@@ -12,7 +12,7 @@ class TestMongoClient:
     
     def test_get_mongo_client_creates_new(self):
         """Test creating a new MongoDB client."""
-        with patch('dashboard.mongo_alerts.MongoClient') as mock_client_class:
+        with patch('dashboard.mongo.alerts.MongoClient') as mock_client_class:
             mock_instance = MagicMock()
             mock_client_class.return_value = mock_instance
             
@@ -26,7 +26,7 @@ class TestMongoClient:
     
     def test_get_mongo_client_reuses_existing(self):
         """Test reusing existing MongoDB client."""
-        with patch('dashboard.mongo_alerts.MongoClient') as mock_client_class:
+        with patch('dashboard.mongo.alerts.MongoClient') as mock_client_class:
             mock_instance = MagicMock()
             mock_client_class.return_value = mock_instance
             
@@ -41,7 +41,7 @@ class TestMongoClient:
     
     def test_get_mongo_client_recreates_on_uri_change(self):
         """Test recreating client when URI changes."""
-        with patch('dashboard.mongo_alerts.MongoClient') as mock_client_class:
+        with patch('dashboard.mongo.alerts.MongoClient') as mock_client_class:
             mock_instance1 = MagicMock()
             mock_instance2 = MagicMock()
             mock_client_class.side_effect = [mock_instance1, mock_instance2]
@@ -57,7 +57,7 @@ class TestMongoClient:
     
     def test_close_mongo_client(self):
         """Test closing MongoDB client."""
-        with patch('dashboard.mongo_alerts.MongoClient') as mock_client_class:
+        with patch('dashboard.mongo.alerts.MongoClient') as mock_client_class:
             mock_instance = MagicMock()
             mock_client_class.return_value = mock_instance
             
@@ -72,7 +72,7 @@ class TestFetchAlerts:
     
     def test_fetch_alerts_success(self, sample_alerts):
         """Test successfully fetching alerts."""
-        with patch('dashboard.mongo_alerts.get_mongo_client') as mock_get_client:
+        with patch('dashboard.mongo.alerts.get_mongo_client') as mock_get_client:
             mock_client = MagicMock()
             mock_db = MagicMock()
             mock_collection = MagicMock()
@@ -102,7 +102,7 @@ class TestFetchAlerts:
     
     def test_fetch_alerts_empty_collection(self):
         """Test fetching from an empty collection."""
-        with patch('dashboard.mongo_alerts.get_mongo_client') as mock_get_client:
+        with patch('dashboard.mongo.alerts.get_mongo_client') as mock_get_client:
             mock_client = MagicMock()
             mock_db = MagicMock()
             mock_collection = MagicMock()
@@ -127,7 +127,7 @@ class TestFetchAlerts:
     
     def test_fetch_alerts_connection_failure(self):
         """Test handling connection failure."""
-        with patch('dashboard.mongo_alerts.get_mongo_client') as mock_get_client:
+        with patch('dashboard.mongo.alerts.get_mongo_client') as mock_get_client:
             mock_get_client.side_effect = ConnectionFailure("Connection failed")
             
             with pytest.raises(ConnectionFailure):
@@ -140,7 +140,7 @@ class TestFetchAlerts:
     
     def test_fetch_alerts_auto_detect_sort_field(self, sample_alerts):
         """Test automatic sort field detection."""
-        with patch('dashboard.mongo_alerts.get_mongo_client') as mock_get_client:
+        with patch('dashboard.mongo.alerts.get_mongo_client') as mock_get_client:
             mock_client = MagicMock()
             mock_db = MagicMock()
             mock_collection = MagicMock()

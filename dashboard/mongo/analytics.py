@@ -1,7 +1,7 @@
 import logging
 from typing import List, Dict, Any
 
-from dashboard.mongo_alerts import get_mongo_client
+from dashboard.mongo.alerts import get_mongo_client
 from dashboard.mock import is_mock_mode, MockMongoAnalytics
 
 logger = logging.getLogger(__name__)
