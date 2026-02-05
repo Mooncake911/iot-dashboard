@@ -1,7 +1,10 @@
 """Mock implementations for local development without external services."""
 
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+from datetime import datetime, timedelta
+import logging
+from dashboard.core.repository import Repository
 
 # Global state for mock mode
 _mock_active: bool = False
@@ -27,162 +30,94 @@ def is_mock_mode() -> bool:
     return _mock_active
 
 
-class MockHTTPClient:
-    """Mock HTTP client that returns fake responses for API calls."""
-
-    # Simulated state
-    _simulator_running = False
-    _analytics_running = False
-    _simulator_config = {"deviceCount": 10, "messagesPerSecond": 5}
-    _analytics_config = {"method": "SEQUENTIAL", "batchSize": 100}
-
-    @staticmethod
-    def _parse_params(url: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        """Extract parameters from both kwargs and URL query string."""
-        params = kwargs.get("params", {}).copy() if kwargs.get("params") else {}
-
-        if "?" in url:
-            from urllib.parse import parse_qs, urlparse
-            parsed_url = urlparse(url)
-            query_params = parse_qs(parsed_url.query)
-
-            for key, values in query_params.items():
-                # parse_qs returns a list of values, take the first one
-                if values:
-                    params[key] = values[0]
-
-        return params
-
-    @classmethod
-    def request(cls, method: str, url: str, timeout: int = 10, **kwargs) -> Dict[str, Any]:
-        """Mock HTTP request that returns fake responses based on URL."""
-
-        # Simulator endpoints
-        if "/simulator/status" in url:
-            return {
-                "status": 200,
-                "body": {
-                    "running": cls._simulator_running,
-                    "deviceCount": cls._simulator_config["deviceCount"],
-                    "messagesPerSecond": cls._simulator_config["messagesPerSecond"]
-                },
-                "url": url
-            }
-
-        elif "/simulator/config" in url:
-            # Extract query parameters from kwargs or URL
-            params = cls._parse_params(url, kwargs)
-
-            if "deviceCount" in params:
-                try:
-                    cls._simulator_config["deviceCount"] = int(params["deviceCount"])
-                except (ValueError, TypeError):
-                    pass
-
-            if "messagesPerSecond" in params:
-                try:
-                    cls._simulator_config["messagesPerSecond"] = int(params["messagesPerSecond"])
-                except (ValueError, TypeError):
-                    pass
-
-            return {
-                "status": 200,
-                "body": {"message": "Simulator configured successfully (MOCK)"},
-                "url": url
-            }
-
-        elif "/simulator/start" in url:
-            cls._simulator_running = True
-            return {
-                "status": 200,
-                "body": {"message": "Simulator started (MOCK)"},
-                "url": url
-            }
-
-        elif "/simulator/stop" in url:
-            cls._simulator_running = False
-            return {
-                "status": 200,
-                "body": {"message": "Simulator stopped (MOCK)"},
-                "url": url
-            }
-
-        # Analytics endpoints
-        elif "/analytics/status" in url:
-            return {
-                "status": 200,
-                "body": {
-                    "method": cls._analytics_config["method"],
-                    "batchSize": cls._analytics_config["batchSize"],
-                    "running": cls._analytics_running
-                },
-                "url": url
-            }
-
-        elif "/analytics/config" in url:
-            params = cls._parse_params(url, kwargs)
-
-            if "method" in params:
-                cls._analytics_config["method"] = params["method"]
-            if "batchSize" in params:
-                try:
-                    cls._analytics_config["batchSize"] = int(params["batchSize"])
-                except (ValueError, TypeError):
-                    pass
-
-            return {
-                "status": 200,
-                "body": {"message": "Analytics configured successfully (MOCK)"},
-                "url": url
-            }
-
-        elif "/analytics/start" in url:
-            cls._analytics_running = True
-            return {
-                "status": 200,
-                "body": {"message": "Analytics started (MOCK)"},
-                "url": url
-            }
-
-        elif "/analytics/stop" in url:
-            cls._analytics_running = False
-            return {
-                "status": 200,
-                "body": {"message": "Analytics stopped (MOCK)"},
-                "url": url
-            }
-
-        # Default response
-        return {
-            "status": 200,
-            "body": {"message": "Mock response", "url": url},
-            "url": url
+class MockDataSource:
+    """State holder for mock data."""
+    def __init__(self):
+        self.simulator = {
+            "running": False,
+            "deviceCount": 10,
+            "messagesPerSecond": 5
+        }
+        self.analytics = {
+            "running": False,
+            "method": "SEQUENTIAL",
+            "batchSize": 100
         }
 
+    def toggle_simulator(self, run: bool):
+        self.simulator["running"] = run
+        return True
 
-class MockMongoAlerts:
+    def update_simulator_config(self, count: int, rate: int):
+        self.simulator["deviceCount"] = count
+        self.simulator["messagesPerSecond"] = rate
+        return True
+
+    def toggle_analytics(self, run: bool):
+        self.analytics["running"] = run
+        return True
+
+    def update_analytics_config(self, method: str, batch: int):
+        self.analytics["method"] = method
+        self.analytics["batchSize"] = batch
+        return True
+
+# Global instance for state persistence across re-runs
+_mock_source = MockDataSource()
+
+def get_mock_source():
+    return _mock_source
+
+
+class MockMongoAlerts(Repository):
     """Mock MongoDB alerts generator for local development."""
+    def __init__(self):
+        self.db_name = "MOCK_DB"
+        self.collection_name = "MOCK_ALERTS"
 
-    @classmethod
-    def fetch_alerts(cls, mongo_uri: str, mongo_db: str, collection: str, limit: int) -> List[Dict[str, Any]]:
+    def fetch_data(self, limit: int) -> List[Dict[str, Any]]:
         """Generate fake alerts for display."""
-        from dashboard.mock_data import generate_fake_alerts_list
-        return generate_fake_alerts_list(limit)
+        return [
+            {
+                "ruleId": "RULE_001",
+                "severity": "critical",
+                "message": "High temperature detected",
+                "deviceId": "SENSOR_01",
+                "timestamp": datetime.now().isoformat()
+            },
+            {
+                 "ruleId": "RULE_002",
+                 "severity": "warning",
+                 "message": "Low battery",
+                 "deviceId": "SENSOR_02",
+                 "timestamp": (datetime.now() - timedelta(minutes=5)).isoformat()
+             }
+        ][:limit]
 
-    @classmethod
-    def close_mongo_client(cls):
-        """Mock close - does nothing."""
-        pass
 
-
-class MockMongoAnalytics:
+class MockMongoAnalytics(Repository):
     """Mock MongoDB analytics generator for local development."""
+    def __init__(self):
+        self.db_name = "MOCK_DB"
+        self.collection_name = "MOCK_ANALYTICS"
 
-    @classmethod
-    def fetch_analytics_history(cls, mongo_uri: str, mongo_db: str, collection: str, limit: int) -> List[Dict[str, Any]]:
+    def fetch_data(self, limit: int) -> List[Dict[str, Any]]:
         """Generate fake analytics history for display."""
-        from dashboard.mock_data import generate_fake_analytics_list
-        return generate_fake_analytics_list(limit)
+        # Simple mock data generation inline to avoid external deps if file missing
+        current_time = datetime.now()
+        data = []
+        for i in range(limit):
+            t = current_time - timedelta(seconds=i*5)
+            data.append({
+                "timestamp": t.isoformat(),
+                "metrics": {
+                    "battery": {"avg": 50 + (i % 20)},
+                    "signal": {"avg": 80 - (i % 10)},
+                    "onlineDevices": 42,
+                    "totalDevices": 50
+                }
+            })
+        return data
 
 
 def get_mock_config() -> Dict[str, Any]:

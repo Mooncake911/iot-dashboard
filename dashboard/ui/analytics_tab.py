@@ -1,99 +1,117 @@
-import streamlit as st
+from datetime import datetime, timedelta
 import pandas as pd
-from datetime import datetime
-from dashboard.mongo.alerts import get_mongo_client
-from dashboard.mongo.analytics import fetch_analytics_history
-from dashboard.http_client import request
 
-from dashboard.ui.utils.components import section_header, metric_row, render_apply_button
+import streamlit as st
 
-def render_analytics_tab(analytics_api: str, mongo_uri: str, mongo_db: str, mongo_collection: str, limit_default: int = 100):
-    """Render Analytics Monitor tab."""
-    section_header("Analytics Monitor", "Real-time device statistics and health trends.", icon="📊")
+from dashboard.services import AnalyticsService
+from dashboard.ui.utils.components import section_header
 
-    # Fetch status
-    status_resp = request("GET", f"{analytics_api}/api/analytics/status")
-    body = status_resp.get("body", {}) if status_resp and status_resp.get("status") == 200 else {}
-    current_method = body.get("method", "Unknown")
-    current_batch_size = body.get("batchSize", 0)
 
-    # Config & Status Row
-    main_col1, main_col2 = st.columns(2)
+def render_analytics_tab(service: AnalyticsService, refresh_default: int, limit_default: int = 100):
+    section_header("Analytics Monitor", "Real-time device analytics.", icon="📊", level=3)
 
-    with main_col1:
-        st.subheader("⚙️ Configuration")
-        method = st.selectbox(
-            "Processing Method", 
-            ["Sequential", "Flowable", "Observable", "CustomCollector", "ParallelStream"],
-            index=1, help="RxJava processing method"
-        )
-        batch_size = st.number_input(
-            "Batch Size", min_value=1, max_value=100000, 
-            value=int(current_batch_size) or 20, step=10
-        )
-        if render_apply_button("analytics_config"):
-            url = f"{analytics_api}/api/analytics/config?method={method}&batchSize={int(batch_size)}"
-            if request("POST", url).get("status") == 200:
-                st.success("Configuration applied!")
-                st.rerun()
-            else:
-                st.error("Failed to update")
+    # Get status
+    status = service.get_status()
 
-    with main_col2:
-        st.subheader("📊 Current Status")
-        metric_row({"Active Method": current_method, "Active Batch Size": str(current_batch_size)}, columns=1)
+    # Main UI Layout
+    col1, col2 = st.columns([2, 1], gap="medium")
 
-    st.divider()
+    with col1:
+        with st.container(border=True):
+            section_header("Engine Config", icon="⚙️", level=4)
+            c1, c2 = st.columns(2)
+            method = c1.selectbox("Processing Strategy",
+                                  ["Sequential", "Flowable", "Observable", "CustomCollector", "ParallelStream"],
+                                  index=0)
+            batch = c2.number_input("Batch Size", 1, 100000, int(status.get("batchSize", 20)))
 
-    # UX Controls
-    st.subheader("📈 Graphs")
-    col_ux1, col_ux2 = st.columns([2, 1])
-    with col_ux1:
-        st.session_state.refresh_seconds = st.slider("🔄 Auto-refresh (sec)", 1, 60, st.session_state.refresh_seconds)
-    with col_ux2:
-        limit = st.number_input("📊 Show last N points", 10, 1000, int(limit_default), 10)
+            btn_clicked = st.button("💾 Apply Configuration",
+                                    use_container_width=True,
+                                    key="analytics_btn")
+            if btn_clicked:
+                try:
+                    if service.update_config(method, batch):
+                        st.toast("Configuration updated", icon="✅")
+                    else:
+                        st.error("Failed to update configuration")
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
 
-    # Fetch and process data
-    try:
-        data = fetch_analytics_history(mongo_uri, mongo_db, mongo_collection, limit=limit)
-        if not data:
-            st.info("No analytics data found.")
-            return
+    with col2:
+        with st.container(border=True):
+            section_header("Current Status", icon="📊", level=4)
+            st.metric("Engine", str(status.get("method", "N/A")))
+            st.metric("Batch", str(status.get("batchSize", 0)))
 
-        df_rows = []
-        for doc in data:
-            m = doc.get("metrics", {})
-            df_rows.append({
-                "Timestamp": pd.to_datetime(doc.get("timestamp")),
-                "Battery %": m.get("battery", {}).get("avg", 0),
-                "Signal %": m.get("signal", {}).get("avg", 0),
-                "Online": m.get("onlineDevices", 0),
-                "Total": m.get("totalDevices", 0),
-                "Heartbeat": m.get("heartbeat", {}).get("avg", 0),
-            })
+    with st.container(border=True):
+        section_header("Trend Analysis", icon="📈", level=4)
         
-        df = pd.DataFrame(df_rows).sort_values("Timestamp")
-        
-        # Latest metrics row
-        latest = df.iloc[-1]
-        st.divider()
-        metric_row({
-            "Online Devices": f"{int(latest['Online'])} / {int(latest['Total'])}",
-            "Avg Battery": f"{latest['Battery %']:.1f}%",
-            "Avg Signal": f"{latest['Signal %']:.1f}%",
-            "Last Update": latest["Timestamp"].strftime("%H:%M:%S")
-        })
-        
-        st.divider()
-        
-        # Charts
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("**Battery level**")
-            st.line_chart(df.set_index("Timestamp")[["Battery %"]])
-        with c2:
-            st.markdown("**Signal strength**")
-            st.line_chart(df.set_index("Timestamp")[["Signal %"]])
+        # Controls outside fragment to avoid re-rendering them constantly
+        c1, c2, c3 = st.columns([3, 1, 1])
+        refresh_sec = c1.slider("🔄 Refresh rate (sec)", 1, 60, int(refresh_default), key="analytics_refresh_slider")
+        refresh_clicked = c2.button("🔄 Refresh Now", key="analytics_refresh_btn", use_container_width=True)
+        limit = c3.number_input("📊 Buffer size", 1, 1000, int(limit_default), 10, key="analytics_limit_input")
 
-    except Exception as e:
-        st.error(f"Error: {e}")
+        if refresh_clicked:
+            st.toast("Forced refresh", icon="🔄")
+
+        @st.fragment
+        def show_trends(sec_interval):
+             # Auto-refresh mechanism inside fragment
+             from streamlit_autorefresh import st_autorefresh
+             if sec_interval > 0:
+                 st_autorefresh(interval=sec_interval * 1000, key="analytics_autorefresh")
+             
+             # Initialize state within fragment scope check (or rely on global session state)
+             if "analytics_data" not in st.session_state:
+                 st.session_state.analytics_data = []
+
+             try:
+                 st.session_state.analytics_data = service.get_history(limit=int(limit))
+                 st.session_state.last_analytics_refresh = datetime.now()
+                 
+                 analytics = st.session_state.analytics_data
+                 
+                 if not analytics:
+                     st.info("📭 No analytics data yet.")
+                     return
+
+                 # Transformation
+                 df = pd.DataFrame([
+                    {
+                        "Time": pd.to_datetime(d.get("timestamp")),
+                        "Battery": d.get("metrics", {}).get("battery", {}).get("avg", 0),
+                        "Signal": d.get("metrics", {}).get("signal", {}).get("avg", 0),
+                        "Online": d.get("metrics", {}).get("onlineDevices", 0),
+                        "Total": d.get("metrics", {}).get("totalDevices", 0),
+                    } for d in analytics
+                 ]).sort_values("Time")
+
+                 latest = df.iloc[-1] if len(df) > 0 else None
+
+                 if latest is not None:
+                    st.divider()
+                    mc1, mc2, mc3 = st.columns(3)
+                    mc1.metric("Device Status", f"{int(latest['Online'])} / {int(latest['Total'])} online")
+                    mc2.metric("Battery Avg", f"{latest['Battery']:.1f}%")
+                    mc3.metric("Signal Avg", f"{latest['Signal']:.1f}%")
+                    st.divider()
+
+                    tab_batt, tab_sig = st.tabs(["🔋 Battery Level", "📶 Signal Strength"])
+                    with tab_batt:
+                        st.area_chart(df.set_index("Time")[["Battery"]], color="#2ecc71")
+                    with tab_sig:
+                        st.area_chart(df.set_index("Time")[["Signal"]], color="#3498db")
+                 else:
+                     st.info("No data available yet")
+                 
+                 # Footer info
+                 update_time = st.session_state.last_analytics_refresh.strftime('%H:%M:%S')
+                 db_info = f"📍 Connected to {service.repository.db_name}.{service.repository.collection_name} | "
+                 st.caption(f"{db_info}Last refresh: {update_time} | Auto-refresh every {sec_interval}s")
+
+             except Exception as e:
+                 st.error(f"Analytics Pipeline Error: {e}", icon="❌")
+
+        # Call the fragment
+        show_trends(refresh_sec)
