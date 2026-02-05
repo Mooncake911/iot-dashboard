@@ -1,7 +1,5 @@
-import logging
-
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
+import logging
 
 from dashboard.config import load_config
 from dashboard.ui import render_alerts_tab, render_simulator_tab, render_analytics_tab

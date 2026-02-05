@@ -3,6 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class SimulatorService(BaseService):
     def get_status(self) -> dict:
         """Fetch simulator status."""
@@ -17,6 +18,6 @@ class SimulatorService(BaseService):
         """Update simulator configuration."""
         # Clean parameter passing
         return self._post(
-            "/api/simulator/config", 
+            "/api/simulator/config",
             params={"deviceCount": device_count, "messagesPerSecond": messages_per_second}
         )

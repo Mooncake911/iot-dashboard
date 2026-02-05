@@ -5,6 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class AnalyticsService(BaseService):
     def __init__(self, api_client: ApiClient, repository: Repository):
         super().__init__(api_client)

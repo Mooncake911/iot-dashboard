@@ -1,9 +1,8 @@
 """Mock implementations for local development without external services."""
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from datetime import datetime, timedelta
-import logging
 from dashboard.core.repository import Repository
 
 # Global state for mock mode
@@ -32,6 +31,7 @@ def is_mock_mode() -> bool:
 
 class MockDataSource:
     """State holder for mock data."""
+
     def __init__(self):
         self.simulator = {
             "running": False,
@@ -62,8 +62,10 @@ class MockDataSource:
         self.analytics["batchSize"] = batch
         return True
 
+
 # Global instance for state persistence across re-runs
 _mock_source = MockDataSource()
+
 
 def get_mock_source():
     return _mock_source
@@ -71,6 +73,7 @@ def get_mock_source():
 
 class MockMongoAlerts(Repository):
     """Mock MongoDB alerts generator for local development."""
+
     def __init__(self):
         self.db_name = "MOCK_DB"
         self.collection_name = "MOCK_ALERTS"
@@ -86,17 +89,18 @@ class MockMongoAlerts(Repository):
                 "timestamp": datetime.now().isoformat()
             },
             {
-                 "ruleId": "RULE_002",
-                 "severity": "warning",
-                 "message": "Low battery",
-                 "deviceId": "SENSOR_02",
-                 "timestamp": (datetime.now() - timedelta(minutes=5)).isoformat()
-             }
+                "ruleId": "RULE_002",
+                "severity": "warning",
+                "message": "Low battery",
+                "deviceId": "SENSOR_02",
+                "timestamp": (datetime.now() - timedelta(minutes=5)).isoformat()
+            }
         ][:limit]
 
 
 class MockMongoAnalytics(Repository):
     """Mock MongoDB analytics generator for local development."""
+
     def __init__(self):
         self.db_name = "MOCK_DB"
         self.collection_name = "MOCK_ANALYTICS"
@@ -107,7 +111,7 @@ class MockMongoAnalytics(Repository):
         current_time = datetime.now()
         data = []
         for i in range(limit):
-            t = current_time - timedelta(seconds=i*5)
+            t = current_time - timedelta(seconds=i * 5)
             data.append({
                 "timestamp": t.isoformat(),
                 "metrics": {

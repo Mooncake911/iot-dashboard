@@ -1,4 +1,5 @@
 import streamlit as st
+
 from dashboard.services import SimulatorService
 from dashboard.ui.utils.components import section_header
 
@@ -20,9 +21,7 @@ def render_simulator_tab(service: SimulatorService):
             count = c1.number_input("Devices", 1, 10000, int(status.get("deviceCount", 10)))
             rate = c2.number_input("Msgs/sec", 1, 1000, int(status.get("messagesPerSecond", 1)))
 
-            btn_clicked = st.button("💾 Apply Configuration",
-                                      use_container_width=True,
-                                      key="sim_params_btn")
+            btn_clicked = st.button("💾 Apply Configuration", key="sim_params_btn", width="stretch")
             if btn_clicked:
                 try:
                     if service.update_config(count, rate):
@@ -50,10 +49,12 @@ def render_simulator_tab(service: SimulatorService):
         st.info(f"Status: **{status_text}**")
 
         btn_clicked = st.button("Stop Simulation" if is_running else "Start Simulation",
-                                   use_container_width=True,
-                                   key="start_stop_sim_btn")
+                                key="start_stop_sim_btn", width="stretch")
         if btn_clicked:
             try:
-                service.toggle_simulator(is_running)
+                if service.toggle_simulator(is_running):
+                    st.rerun()
+                else:
+                    st.error("Failed to toggle simulator state")
             except Exception as e:
                 st.error(f"Error: {str(e)}")

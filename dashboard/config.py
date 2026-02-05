@@ -36,15 +36,15 @@ def _resolve_env_placeholder(value: str) -> str:
     """
     if not isinstance(value, str):
         return value
-    
+
     # Pattern: ${VAR_NAME:default_value} or ${VAR_NAME}
     pattern = r'\$\{([^}:]+)(?::([^}]*))?\}'
-    
+
     def replacer(match):
         var_name = match.group(1)
         default_value = match.group(2) if match.group(2) is not None else ""
         return os.getenv(var_name, default_value)
-    
+
     return re.sub(pattern, replacer, value)
 
 
@@ -82,7 +82,7 @@ def _load_yaml_config(config_path: str) -> dict[str, Any]:
     path = Path(config_path)
     if not path.exists():
         return {}
-    
+
     try:
         with path.open('r', encoding='utf-8') as f:
             data = yaml.safe_load(f)
@@ -119,16 +119,16 @@ def load_config(config_path: str = "application.yml") -> DashboardConfig:
         raw_data = get_mock_config()
     else:
         raw_data = _load_yaml_config(config_path)
-    
+
     if not raw_data:
         raise ValueError(
             f"Configuration file '{config_path}' is missing or invalid. "
             f"Please ensure application.yml exists and is properly formatted."
         )
-    
+
     # Resolve environment variable placeholders
     data = _resolve_env_in_dict(raw_data)
-    
+
     # Extract dashboard configuration section
     dashboard = data.get('dashboard')
     if not dashboard:
@@ -136,34 +136,34 @@ def load_config(config_path: str = "application.yml") -> DashboardConfig:
             "Missing 'dashboard' section in configuration. "
             "Please check your application.yml structure."
         )
-    
+
     # Mock mode configuration
     mock_mode = str(dashboard.get('mock-mode', 'false')).lower() in ('true', '1', 'yes')
-    
+
     # Services configuration
     services = dashboard.get('services', {})
     if not services and not mock_mode:
         raise KeyError("Missing 'dashboard.services' section in configuration")
-    
+
     simulator_api_url = services.get('simulator', {}).get('url')
     analytics_api_url = services.get('analytics', {}).get('url')
-    
+
     if not mock_mode and not all([simulator_api_url, analytics_api_url]):
         raise KeyError(
             "Missing service URLs in configuration. Required: "
             "dashboard.services.simulator.url, dashboard.services.analytics.url"
         )
-    
+
     # MongoDB configuration
     mongodb = dashboard.get('mongodb', {})
     if not mongodb and not mock_mode:
         raise KeyError("Missing 'dashboard.mongodb' section in configuration")
-    
+
     mongo_uri = mongodb.get('uri')
     mongo_db = mongodb.get('database')
     mongo_alerts_collection = mongodb.get('collections', {}).get('alerts')
     mongo_analytics_collection = mongodb.get('collections', {}).get('analytics')
-    
+
     if not mock_mode and not all([mongo_uri, mongo_db, mongo_alerts_collection, mongo_analytics_collection]):
         raise KeyError(
             "Missing MongoDB configuration. Required: "
@@ -171,12 +171,12 @@ def load_config(config_path: str = "application.yml") -> DashboardConfig:
             "dashboard.mongodb.collections.alerts, "
             "dashboard.mongodb.collections.analytics"
         )
-    
+
     # UI configuration
     ui = dashboard.get('ui', {})
     if not ui:
         raise KeyError("Missing 'dashboard.ui' section in configuration")
-    
+
     try:
         refresh_seconds_default = int(ui.get('refresh-seconds-default', 5))
         alerts_limit_default = int(ui.get('alerts-limit-default', 50))
@@ -186,7 +186,7 @@ def load_config(config_path: str = "application.yml") -> DashboardConfig:
             f"Invalid UI configuration values: {e}. "
             "refresh-seconds-default, alerts-limit-default and analytics-limit-default must be integers."
         )
-    
+
     return DashboardConfig(
         mock_mode=mock_mode,
         simulator_api_url=simulator_api_url or "",

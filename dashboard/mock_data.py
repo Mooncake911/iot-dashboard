@@ -58,7 +58,7 @@ def generate_fake_alerts_list(limit: int) -> List[Dict[str, Any]]:
 def generate_fake_analytics_point(index: int, now: datetime) -> Dict[str, Any]:
     """Generate a single fake analytics document."""
     timestamp = now - timedelta(minutes=index)
-    
+
     return {
         "_id": f"mock_analytics_{index:03d}",
         "deviceId": 1,

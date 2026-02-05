@@ -5,6 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class ApiClient(ABC):
     """Abstract base class for API interactions."""
 
@@ -47,7 +48,7 @@ class RealApiClient(ApiClient):
 
 class MockApiClient(ApiClient):
     """Implementation that interacts with the MockDataSource within the application."""
-    
+
     def __init__(self):
         from dashboard.mock import get_mock_source
         self.source = get_mock_source()
@@ -63,7 +64,7 @@ class MockApiClient(ApiClient):
     def post(self, path: str, json: Optional[Dict[str, Any]] = None, params: Optional[Dict[str, Any]] = None) -> bool:
         # Mapping path -> action
         params = params or {}
-        
+
         if "simulator/start" in path:
             return self.source.toggle_simulator(True)
         if "simulator/stop" in path:
@@ -73,11 +74,11 @@ class MockApiClient(ApiClient):
                 int(params.get("deviceCount", 10)),
                 int(params.get("messagesPerSecond", 1))
             )
-            
+
         if "analytics/config" in path:
             return self.source.update_analytics_config(
                 params.get("method", "SEQUENTIAL"),
                 int(params.get("batchSize", 20))
             )
-            
+
         return True

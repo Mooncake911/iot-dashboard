@@ -3,6 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class BaseService:
     def __init__(self, api_client: ApiClient):
         self.client = api_client

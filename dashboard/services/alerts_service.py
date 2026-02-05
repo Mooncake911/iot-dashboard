@@ -3,6 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class AlertsService:
     def __init__(self, repository: Repository):
         self.repository = repository

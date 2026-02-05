@@ -9,7 +9,6 @@ dependencies = [
     "pyyaml>=6.0.2",
     "requests>=2.32.3",
     "streamlit>=1.53.0",
-    "streamlit-autorefresh>=1.0.1",
     "pandas>=2.2.0",
 ]
 
