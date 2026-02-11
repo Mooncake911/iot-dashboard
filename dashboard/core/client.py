@@ -3,6 +3,8 @@ from typing import Any, Dict, Optional
 import requests
 import logging
 
+from dashboard.mock import MockDataSource
+
 logger = logging.getLogger(__name__)
 
 
@@ -49,36 +51,49 @@ class RealApiClient(ApiClient):
 class MockApiClient(ApiClient):
     """Implementation that interacts with the MockDataSource within the application."""
 
-    def __init__(self):
-        from dashboard.mock import get_mock_source
-        self.source = get_mock_source()
-
+    def __init__(self, source: MockDataSource):
+        self.source = source
+        
+        # Declarative route mapping
+        self._get_routes = {
+            "simulator/status": lambda: self.source.simulator,
+            "analytics/status": lambda: self.source.analytics,
+        }
+        
     def get(self, path: str) -> Dict[str, Any]:
-        # Mapping path -> data source
-        if "simulator/status" in path:
-            return self.source.simulator
-        if "analytics/status" in path:
-            return self.source.analytics
+        path = path.lstrip('/')
+        # Remove /api prefix if present
+        if path.startswith("api/"):
+            path = path[4:]
+            
+        handler = self._get_routes.get(path)
+        if handler:
+            return handler()
+        
+        logger.warning(f"Mock GET: No handler for path '{path}'")
         return {}
 
     def post(self, path: str, json: Optional[Dict[str, Any]] = None, params: Optional[Dict[str, Any]] = None) -> bool:
-        # Mapping path -> action
+        path = path.lstrip('/')
+        if path.startswith("api/"):
+            path = path[4:]
+            
         params = params or {}
 
-        if "simulator/start" in path:
+        if path == "simulator/start":
             return self.source.toggle_simulator(True)
-        if "simulator/stop" in path:
+        if path == "simulator/stop":
             return self.source.toggle_simulator(False)
-        if "simulator/config" in path:
+        if path == "simulator/config":
             return self.source.update_simulator_config(
                 int(params.get("deviceCount", 10)),
                 int(params.get("messagesPerSecond", 1))
             )
-
-        if "analytics/config" in path:
+        if path == "analytics/config":
             return self.source.update_analytics_config(
                 params.get("method", "SEQUENTIAL"),
                 int(params.get("batchSize", 20))
             )
 
+        logger.warning(f"Mock POST: No handler for path '{path}'")
         return True

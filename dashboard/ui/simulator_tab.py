@@ -1,60 +1,123 @@
+from dataclasses import dataclass
+from typing import Dict, Any
+
 import streamlit as st
 
 from dashboard.services import SimulatorService
 from dashboard.ui.utils.components import section_header
 
 
-def render_simulator_tab(service: SimulatorService):
-    section_header("Simulator Monitor", "IoT Traffic Simulation Control.", icon="📡", level=3)
+@dataclass(frozen=True)
+class SimulatorStatus:
+    device_count: int = 10
+    messages_per_second: int = 1
+    is_running: bool = False
 
-    # Get status
-    status = service.get_status()
-    is_running = status.get("running", False)
+    @property
+    def total_load(self) -> int:
+        return self.device_count * self.messages_per_second
 
-    # Main UI Layout
-    col1, col2 = st.columns([2, 1], gap="medium")
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]):
+        return cls(
+            device_count=int(data.get("deviceCount", 10)),
+            messages_per_second=int(data.get("messagesPerSecond", 1)),
+            is_running=bool(data.get("running", False))
+        )
 
-    with col1:
+
+class SimulatorTab:
+    VIEW_CONFIG = {
+        True: {"label": "STARTED 🟢", "btn_label": "Stop Simulation"},
+        False: {"label": "STOPPED 🔴", "btn_label": "Start Simulation"}
+    }
+
+    def __init__(self, service: SimulatorService):
+        self._service = service
+
+        if "simulator_status" not in st.session_state:
+            self._sync_status()
+
+    def _sync_status(self):
+        """Синхронизация состояния сессии с сервером."""
+        try:
+            raw_data = self.get_status()
+            st.session_state.simulator_status = SimulatorStatus.from_dict(raw_data)
+        except Exception as e:
+            st.error(f"Failed to sync simulator status: {e}")
+            st.session_state.simulator_status = SimulatorStatus()
+
+    @property
+    def _status(self) -> SimulatorStatus:
+        return st.session_state.simulator_status
+
+    def render(self):
+        section_header("Simulator Monitor", "IoT Traffic Simulation Control.", icon="📡", level=3)
+        st.divider()
+
         with st.container(border=True):
+            self._render_configuration_block()
+
+        with st.container(border=True):
+            self._render_operations_block()
+
+    @st.fragment
+    def _render_configuration_block(self):
+        col1, col2 = st.columns(2, gap="xxlarge")
+
+        with col1:
             section_header("Simulation Parameters", icon="⚙️", level=4)
             c1, c2 = st.columns(2)
-            count = c1.number_input("Devices", 1, 10000, int(status.get("deviceCount", 10)))
-            rate = c2.number_input("Msgs/sec", 1, 1000, int(status.get("messagesPerSecond", 1)))
 
-            btn_clicked = st.button("💾 Apply Configuration", key="sim_params_btn", width="stretch")
+            count = c1.number_input("Devices", 1, 10000, self._status.device_count, key="sim_count_input")
+            rate = c2.number_input("Msgs/sec", 1, 1000, self._status.messages_per_second, key="sim_rate_input")
+            btn_clicked = st.button("💾 Apply Configuration", width="stretch", key="sim_params_btn")
+
             if btn_clicked:
-                try:
-                    if service.update_config(count, rate):
-                        st.toast("Configuration updated", icon="✅")
-                    else:
-                        st.error("Failed to update configuration")
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
+                self.update_config(count, rate)
+                st.rerun(scope="fragment")
 
-    with col2:
-        with st.container(border=True):
-            section_header("Current Status", icon="📊", level=4)
-            if status:
-                c1, c2 = st.columns(2)
-                c1.metric("Active Devices", f"{status.get('deviceCount', 0)} units")
-                c2.metric("Throughput", f"{status.get('messagesPerSecond', 0)} msg/s")
-                st.metric("Message Load",
-                          f"{status.get('deviceCount', 0) * status.get('messagesPerSecond', 0)} msg/s total")
-            else:
-                st.warning("Unable to reach the simulator backend. Please check your connection.")
+        with col2:
+            c1, c2 = st.columns(2)
+            c1.metric("Active Devices", f"{self._status.device_count:,} units")
+            c2.metric("Throughput", f"{self._status.messages_per_second:,} msg/s")
+            st.metric("Total Load", f"{self._status.total_load:,} msg/s", help="Count * Rate")
 
-    with st.container(border=True):
+    @st.fragment
+    def _render_operations_block(self):
         section_header("Operations", icon="🎮", level=4)
-        status_text = "🟢 RUNNING" if is_running else "🔴 STOPPED"
-        st.info(f"Status: **{status_text}**")
 
-        btn_clicked = st.button("Stop Simulation" if is_running else "Start Simulation",
-                                key="start_stop_sim_btn", width="stretch")
-        if btn_clicked:
-            try:
-                if service.toggle_simulator(is_running):
-                    st.rerun()
-                else:
-                    st.error("Failed to toggle simulator state")
-            except Exception as e:
-                st.error(f"Error: {str(e)}")
+        view = self.VIEW_CONFIG[self._status.is_running]
+        st.info(f"Current Status: **{view['label']}**")
+        btn_toggle = st.button(view['btn_label'], width="stretch", key="sim_toggle_btn")
+
+        if btn_toggle:
+            self.toggle_simulator(self._status.is_running)
+            st.rerun(scope="fragment")
+
+    def get_status(self) -> Dict[str, Any]:
+        try:
+            return self._service.get_status()
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
+            return {}
+
+    def update_config(self, count: int, rate: int):
+        try:
+            if self._service.update_config(count, rate):
+                self._sync_status()
+                st.toast("Configuration updated", icon="✅", duration=2)
+            else:
+                st.error("Server failed to update configuration")
+        except Exception as e:
+            st.error(f"Update error: {e}")
+
+    def toggle_simulator(self, target_state: bool):
+        try:
+            if self._service.toggle_simulator(target_state):
+                self._sync_status()
+                st.toast("Simulation STARTED" if not target_state else "Simulation STOPPED", icon="✅", duration=2)
+            else:
+                st.error("Server failed to toggle simulator")
+        except Exception as e:
+            st.error(f"Toggle error: {e}")

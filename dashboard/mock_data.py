@@ -1,8 +1,7 @@
-"""Shared mock data generators for dashboard and tests."""
-
 import random
 from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from typing import List, Dict, Any
+from dashboard.core.types import Alert, AnalyticsPoint
 
 RULE_IDS = [
     "LOW_BATTERY",
@@ -23,7 +22,7 @@ MESSAGES = {
 }
 
 
-def generate_fake_alert(index: int, now: datetime) -> Dict[str, Any]:
+def generate_fake_alert(index: int, now: datetime) -> Alert:
     """Generate a single fake alert document."""
     rule_id = random.choice(RULE_IDS)
     severity = random.choice(SEVERITIES)
@@ -44,7 +43,7 @@ def generate_fake_alert(index: int, now: datetime) -> Dict[str, Any]:
     }
 
 
-def generate_fake_alerts_list(limit: int) -> List[Dict[str, Any]]:
+def generate_fake_alerts_list(limit: int) -> List[Alert]:
     """Generate a list of fake alerts."""
     alerts = []
     now = datetime.now()
@@ -55,7 +54,7 @@ def generate_fake_alerts_list(limit: int) -> List[Dict[str, Any]]:
     return alerts
 
 
-def generate_fake_analytics_point(index: int, now: datetime) -> Dict[str, Any]:
+def generate_fake_analytics_point(index: int, now: datetime) -> AnalyticsPoint:
     """Generate a single fake analytics document."""
     timestamp = now - timedelta(minutes=index)
 
@@ -95,7 +94,7 @@ def generate_fake_analytics_point(index: int, now: datetime) -> Dict[str, Any]:
     }
 
 
-def generate_fake_analytics_list(limit: int) -> List[Dict[str, Any]]:
+def generate_fake_analytics_list(limit: int) -> List[AnalyticsPoint]:
     """Generate a list of fake analytics history points."""
     points = []
     now = datetime.now()

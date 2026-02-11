@@ -10,17 +10,8 @@ class MongoAlertsRepository(MongoBaseRepository):
         try:
             collection = self.get_collection()
 
-            # Auto-detect sort field
+            # Default sort field (should be consistent in DB)
             sort_field = "receivedAt"
-            if collection.estimated_document_count() > 0:
-                sample = collection.find_one()
-                if sample:
-                    if "receivedAt" in sample:
-                        sort_field = "receivedAt"
-                    elif "alertTimestamp" in sample:
-                        sort_field = "alertTimestamp"
-                    else:
-                        sort_field = "_id"
 
             cursor = collection.find({}, limit=limit).sort(sort_field, -1)
             alerts = list(cursor)
@@ -31,6 +22,7 @@ class MongoAlertsRepository(MongoBaseRepository):
                     alert["_id"] = str(alert["_id"])
 
             return alerts
+
         except Exception as e:
             logger.error(f"Error fetching alerts: {e}")
             return []

@@ -71,12 +71,16 @@ def get_mock_source():
     return _mock_source
 
 
-class MockMongoAlerts(Repository):
+class MockMongoAlertsRepository(Repository):
     """Mock MongoDB alerts generator for local development."""
 
     def __init__(self):
-        self.db_name = "MOCK_DB"
-        self.collection_name = "MOCK_ALERTS"
+        self._db_name = "MOCK_DB"
+        self._collection_name = "MOCK_ALERTS"
+
+    @property
+    def source_name(self) -> str:
+        return f"{self._db_name}.{self._collection_name}"
 
     def fetch_data(self, limit: int) -> List[Dict[str, Any]]:
         """Generate fake alerts for display."""
@@ -98,16 +102,20 @@ class MockMongoAlerts(Repository):
         ][:limit]
 
 
-class MockMongoAnalytics(Repository):
+class MockMongoAnalyticsRepository(Repository):
     """Mock MongoDB analytics generator for local development."""
 
     def __init__(self):
-        self.db_name = "MOCK_DB"
-        self.collection_name = "MOCK_ANALYTICS"
+        self._db_name = "MOCK_DB"
+        self._collection_name = "MOCK_ANALYTICS"
+
+    @property
+    def source_name(self) -> str:
+        return f"{self._db_name}.{self._collection_name}"
 
     def fetch_data(self, limit: int) -> List[Dict[str, Any]]:
         """Generate fake analytics history for display."""
-        # Simple mock data generation inline to avoid external deps if file missing
+        # Simple mock data generation inline to avoid external deps if the file missing
         current_time = datetime.now()
         data = []
         for i in range(limit):

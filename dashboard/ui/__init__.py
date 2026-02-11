@@ -1,3 +1,3 @@
-from .alerts_tab import render_alerts_tab
-from .analytics_tab import render_analytics_tab
-from .simulator_tab import render_simulator_tab
+from .alerts_tab import AlertsTab
+from .analytics_tab import AnalyticsServiceTab
+from .simulator_tab import SimulatorTab

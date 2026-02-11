@@ -2,21 +2,14 @@ import streamlit as st
 import logging
 
 from dashboard.config import load_config
-from dashboard.ui import render_alerts_tab, render_simulator_tab, render_analytics_tab
+from dashboard.ui import AlertsTab, SimulatorTab, AnalyticsServiceTab
 from dashboard.ui.utils.styles import apply_custom_styles
+from dashboard.factory import DashboardFactory
 
-# Apply custom styles (optional)
-apply_custom_styles()
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-
+# --- 1. CONFIGURATION & LOGGING ---
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Page configuration
 st.set_page_config(
     page_title="IoT Dashboard",
     page_icon="🌐",
@@ -24,117 +17,87 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Load configuration
-try:
-    from dashboard.mock import set_mock_mode
 
-    cfg = load_config()
-    set_mock_mode(cfg.mock_mode)
-    logger.info(f"Configuration loaded successfully (Mock Mode: {cfg.mock_mode})")
+# --- 2. CACHED SERVICE INITIALIZATION ---
+@st.cache_resource
+def init_application_layer(cfg):
+    """Инициализирует все клиенты, репозитории и сервисы через Factory."""
+    return DashboardFactory.create_application_layer(cfg)
 
-except Exception as e:
-    st.error(f"❌ Failed to load configuration: {e}")
-    logger.error(f"Configuration loading failed: {e}")
-    st.stop()
 
-# Auto-refresh logic
-# refresh_interval = cfg.refresh_seconds_default * 1000
-# st_autorefresh(interval=refresh_interval, key="data_refresh")
+# --- 3. MAIN APP LOGIC ---
+def main():
+    apply_custom_styles()
 
-# Main title
-st.title("🌐 IoT Dashboard")
-st.markdown("**Real-time monitoring and control for IoT services**")
+    # Load config with error handling
+    try:
+        cfg = load_config()
+    except Exception as e:
+        st.error(f"❌ Critical Error: Failed to load configuration: {e}")
+        st.stop()
 
-# Initialize services (Dependency Injection Root)
-if 'services_initialized' not in st.session_state:
-    from dashboard.core.client import RealApiClient, MockApiClient
-    from dashboard.services.simulator_service import SimulatorService
-    from dashboard.services.analytics_service import AnalyticsService
-    from dashboard.mock import is_mock_mode
+    # Initialize Services (once)
+    sim_svc, analytics_svc, alerts_svc = init_application_layer(cfg)
 
-    # 1. Create API Client Strategy
-    if is_mock_mode():
-        logger.info("Initializing services in MOCK mode")
-        from dashboard.core.client import MockApiClient
-        from dashboard.mock import MockMongoAlerts, MockMongoAnalytics
-        
-        sim_client = MockApiClient()
-        analytics_client = MockApiClient()
-        
-        alerts_repo = MockMongoAlerts()
-        analytics_repo = MockMongoAnalytics()
-    else:
-        logger.info("Initializing services in REAL mode")
-        from dashboard.core.client import RealApiClient
-        from dashboard.mongo.alerts import MongoAlertsRepository
-        from dashboard.mongo.analytics import MongoAnalyticsRepository
-        
-        sim_client = RealApiClient(cfg.simulator_api_url)
-        analytics_client = RealApiClient(cfg.analytics_api_url)
-        
-        alerts_repo = MongoAlertsRepository(cfg.mongo_uri, cfg.mongo_db, cfg.mongo_alerts_collection)
-        analytics_repo = MongoAnalyticsRepository(cfg.mongo_uri, cfg.mongo_db, cfg.mongo_analytics_collection)
+    # UI: Header
+    st.title("🌐 IoT Dashboard")
+    st.markdown(f"**Real-time monitoring for {('MOCK' if cfg.mock_mode else 'REAL')} environment**")
 
-    # 2. Wire Services
-    from dashboard.services.simulator_service import SimulatorService
-    from dashboard.services.analytics_service import AnalyticsService
-    from dashboard.services.alerts_service import AlertsService
+    # UI: Sidebar
+    render_sidebar(cfg)
 
-    st.session_state.simulator_service = SimulatorService(sim_client)
-    st.session_state.analytics_service = AnalyticsService(analytics_client, analytics_repo)
-    st.session_state.alerts_service = AlertsService(alerts_repo)
-    st.session_state.services_initialized = True
+    # UI: Tabs
+    tab_sim, tab_analytics, tab_alerts = st.tabs([
+        "📡 Simulator Monitor",
+        "📊 Analytics Monitor",
+        "🚨 Alerts Monitor"
+    ])
 
-# Sidebar configuration
-with st.sidebar:
-    from dashboard.mock import is_mock_mode
+    with tab_sim:
+        SimulatorTab(service=sim_svc).render()
 
-    st.header("⚙️ Configuration")
+    with tab_analytics:
+        AnalyticsServiceTab(
+            service=analytics_svc,
+            refresh_default=cfg.refresh_seconds_default,
+            limit_default=cfg.analytics_limit_default
+        ).render()
 
-    if is_mock_mode():
-        st.warning("⚠️ MOCK MODE ENABLED")
-        st.info("Using fake data and simulated responses")
+    with tab_alerts:
+        AlertsTab(
+            service=alerts_svc,
+            refresh_default=cfg.refresh_seconds_default,
+            limit_default=cfg.alerts_limit_default,
+        ).render()
+
+    # Footer
+    st.divider()
+    st.caption(f"🚀 v3.0 | Status: Online | Mode: {'Mock' if cfg.mock_mode else 'Production'}")
+
+
+# --- 4. UI COMPONENTS ---
+def render_sidebar(cfg):
+    with st.sidebar:
+        st.header("⚙️ Configuration")
+
+        from dashboard.mock import is_mock_mode
+        if is_mock_mode():
+            st.warning("⚠️ MOCK MODE ENABLED")
+
+        with st.expander("🌐 API Endpoints", expanded=not cfg.mock_mode):
+            st.info(f"Simulator: {cfg.simulator_api_url if not cfg.mock_mode else 'Mock'}")
+            st.info(f"Analytics: {cfg.analytics_api_url if not cfg.mock_mode else 'Mock'}")
+
+        with st.expander("🗄️ Database Info", expanded=False):
+            st.text_input("URI", cfg.mongo_uri, type="password", disabled=True)
+            st.text_input("Database", cfg.mongo_db, disabled=True)
+            st.caption("ℹ️ DB settings are read-only (application.yml)")
+
         st.divider()
+        st.subheader("📊 System Status")
+        st.success("✅ Configuration Loaded")
+        st.success("✅ Services Connected")
 
-    st.info(f"Simulator API: {cfg.simulator_api_url if not is_mock_mode() else 'Internal Mock'}")
-    st.info(f"Analytics API: {cfg.analytics_api_url if not is_mock_mode() else 'Internal Mock'}")
 
-    st.divider()
-
-    st.subheader("🗄️ MongoDB")
-    st.text_input("Connection URI", cfg.mongo_uri, type="password", help="MongoDB connection string")
-    st.text_input("Database", cfg.mongo_db, help="MongoDB database name")
-    st.text_input("Alerts Collection", cfg.mongo_alerts_collection, help="Collection name for alerts")
-    st.text_input("Analytics Collection", cfg.mongo_analytics_collection, help="Collection name for analytics data")
-    st.divider()
-
-    # Connection status indicators
-    st.subheader("📊 Status")
-    st.caption(f"✅ Configuration loaded from application.yml")
-    st.caption(f"🔄 Auto-refresh: Enabled")
-
-# Main content tabs
-tab_data, tab_analytics, tab_alerts = st.tabs(["📡 Simulator Monitor", "📊 Analytics Monitor", "🚨 Alerts Monitor", ])
-
-with tab_data:
-    render_simulator_tab(
-        service=st.session_state.simulator_service
-    )
-
-with tab_analytics:
-    render_analytics_tab(
-        service=st.session_state.analytics_service,
-        refresh_default=cfg.refresh_seconds_default,
-        limit_default=cfg.analytics_limit_default
-    )
-
-with tab_alerts:
-    render_alerts_tab(
-        service=st.session_state.alerts_service,
-        refresh_default=cfg.refresh_seconds_default,
-        limit_default=cfg.alerts_limit_default,
-    )
-
-# Footer
-st.divider()
-st.caption("🚀 IoT Dashboard v3.0 - Powered by Streamlit")
+if __name__ == "__main__":
+    main()

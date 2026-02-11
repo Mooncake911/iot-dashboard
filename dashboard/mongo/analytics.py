@@ -13,10 +13,13 @@ class MongoAnalyticsRepository(MongoBaseRepository):
             cursor = collection.find().sort("timestamp", -1).limit(limit)
             docs = list(cursor)
 
+            # ObjectId to string
             for doc in docs:
                 if "_id" in doc:
                     doc["_id"] = str(doc["_id"])
+
             return docs
+
         except Exception as e:
             logger.error(f"Error fetching analytics: {e}")
             return []
