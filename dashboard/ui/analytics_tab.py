@@ -12,13 +12,13 @@ from dashboard.ui.utils.components import section_header
 @dataclass(frozen=True)
 class AnalyticsStatus:
     method: str = "N/A"
-    batch_size: int = 0
+    batch_size: int = 1
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]):
         return cls(
             method=data.get("method", "N/A"),
-            batch_size=int(data.get("batchSize", 0))
+            batch_size=int(data.get("batchSize", 10))
         )
 
     def get_method_index(self, options: list) -> int:
@@ -83,7 +83,7 @@ class AnalyticsServiceTab:
             c1, c2 = st.columns(2)
             current_idx = self._status.get_method_index(self.STRATEGIES)
             method = c1.selectbox("Strategy", self.STRATEGIES, index=current_idx, key="analytics_engine_select")
-            batch = c2.number_input("Batch Size", 1, 100000, self._status.batch_size, key="analytics_batch_input")
+            batch = c2.number_input("Batch Size", 1, 100000, max(1, self._status.batch_size), key="analytics_batch_input")
             btn_clicked = st.button("💾 Apply Configuration", width="stretch", key="analytics_config_btn")
 
             if btn_clicked:

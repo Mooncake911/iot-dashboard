@@ -36,7 +36,8 @@ class MockDataSource:
         self.simulator = {
             "running": False,
             "deviceCount": 10,
-            "messagesPerSecond": 5
+            "frequencySeconds": 1,
+            "batchSize": 500
         }
         self.analytics = {
             "running": False,
@@ -48,9 +49,10 @@ class MockDataSource:
         self.simulator["running"] = run
         return True
 
-    def update_simulator_config(self, count: int, rate: int):
+    def update_simulator_config(self, count: int, frequency: int, batch_size: int):
         self.simulator["deviceCount"] = count
-        self.simulator["messagesPerSecond"] = rate
+        self.simulator["frequencySeconds"] = frequency
+        self.simulator["batchSize"] = batch_size
         return True
 
     def toggle_analytics(self, run: bool):

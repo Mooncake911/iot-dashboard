@@ -48,15 +48,15 @@ dashboard:
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MOCK_MODE` | Enable mock mode (true/false) | `false` |
-| `SIMULATOR_API_URL` | Simulator service base URL | `http://localhost:8080` |
-| `ANALYTICS_API_URL` | Analytics service base URL | `http://localhost:8081` |
-| `CONTROLLER_API_URL` | Controller service base URL | `http://localhost:8082` |
-| `MONGO_URI` | MongoDB connection URI | `mongodb://...` |
-| `MONGO_DB` | MongoDB database name | `iot_db` |
-| `REFRESH_SECONDS_DEFAULT` | Default auto-refresh interval | `2` |
+| Variable                  | Description                   | Default                 |
+|---------------------------|-------------------------------|-------------------------|
+| `MOCK_MODE`               | Enable mock mode (true/false) | `false`                 |
+| `SIMULATOR_API_URL`       | Simulator service base URL    | `http://localhost:8080` |
+| `ANALYTICS_API_URL`       | Analytics service base URL    | `http://localhost:8081` |
+| `CONTROLLER_API_URL`      | Controller service base URL   | `http://localhost:8082` |
+| `MONGO_URI`               | MongoDB connection URI        | `mongodb://...`         |
+| `MONGO_DB`                | MongoDB database name         | `iot_db`                |
+| `REFRESH_SECONDS_DEFAULT` | Default auto-refresh interval | `2`                     |
 
 ---
 

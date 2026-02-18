@@ -87,7 +87,8 @@ class MockApiClient(ApiClient):
         if path == "simulator/config":
             return self.source.update_simulator_config(
                 int(params.get("deviceCount", 10)),
-                int(params.get("messagesPerSecond", 1))
+                int(params.get("frequencySeconds", 1)),
+                int(params.get("batchSize", 500))
             )
         if path == "analytics/config":
             return self.source.update_analytics_config(

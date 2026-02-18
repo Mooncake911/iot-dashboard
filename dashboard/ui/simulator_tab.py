@@ -10,18 +10,20 @@ from dashboard.ui.utils.components import section_header
 @dataclass(frozen=True)
 class SimulatorStatus:
     device_count: int = 10
-    messages_per_second: int = 1
+    frequency_seconds: int = 1
+    batch_size: int = 500
     is_running: bool = False
 
     @property
-    def total_load(self) -> int:
-        return self.device_count * self.messages_per_second
+    def total_load(self) -> float:
+        return self.device_count / self.frequency_seconds if self.frequency_seconds > 0 else 0
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]):
         return cls(
             device_count=int(data.get("deviceCount", 10)),
-            messages_per_second=int(data.get("messagesPerSecond", 1)),
+            frequency_seconds=int(data.get("frequencySeconds", 1)),
+            batch_size=int(data.get("batchSize", 500)),
             is_running=bool(data.get("running", False))
         )
 
@@ -67,21 +69,24 @@ class SimulatorTab:
 
         with col1:
             section_header("Simulation Parameters", icon="⚙️", level=4)
-            c1, c2 = st.columns(2)
+            c1, c2, c3 = st.columns(3)
 
-            count = c1.number_input("Devices", 1, 10000, self._status.device_count, key="sim_count_input")
-            rate = c2.number_input("Msgs/sec", 1, 1000, self._status.messages_per_second, key="sim_rate_input")
+            count = c1.number_input("Devices", 1, 100000, self._status.device_count, key="sim_count_input")
+            freq = c2.number_input("Freq (s)", 1, 3600, self._status.frequency_seconds, key="sim_freq_input")
+            batch = c3.number_input("Batch", 1, 100000, self._status.batch_size, key="sim_batch_input")
+            
             btn_clicked = st.button("💾 Apply Configuration", width="stretch", key="sim_params_btn")
 
             if btn_clicked:
-                self.update_config(count, rate)
-                st.rerun(scope="fragment")
+                self.update_config(count, freq, batch)
+                st.rerun(scope="app")
 
         with col2:
-            c1, c2 = st.columns(2)
-            c1.metric("Active Devices", f"{self._status.device_count:,} units")
-            c2.metric("Throughput", f"{self._status.messages_per_second:,} msg/s")
-            st.metric("Total Load", f"{self._status.total_load:,} msg/s", help="Count * Rate")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Devices", f"{self._status.device_count:,}")
+            c2.metric("Frequency", f"1/{self._status.frequency_seconds}s")
+            c3.metric("Batch Size", f"{self._status.batch_size:,}")
+            st.metric("Aggregate Load", f"{self._status.total_load:,.1f} msg/s", help="Count / Frequency")
 
     @st.fragment
     def _render_operations_block(self):
@@ -102,9 +107,9 @@ class SimulatorTab:
             st.error(f"Error: {str(e)}")
             return {}
 
-    def update_config(self, count: int, rate: int):
+    def update_config(self, count: int, frequency: int, batch: int):
         try:
-            if self._service.update_config(count, rate):
+            if self._service.update_config(count, frequency, batch):
                 self._sync_status()
                 st.toast("Configuration updated", icon="✅", duration=2)
             else:

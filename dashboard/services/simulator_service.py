@@ -14,10 +14,14 @@ class SimulatorService(BaseService):
         action = "stop" if run else "start"
         return self._post(f"/api/simulator/{action}")
 
-    def update_config(self, device_count: int, messages_per_second: int) -> bool:
+    def update_config(self, device_count: int, frequency_seconds: int, batch_size: int) -> bool:
         """Update simulator configuration."""
         # Clean parameter passing
         return self._post(
             "/api/simulator/config",
-            params={"deviceCount": device_count, "messagesPerSecond": messages_per_second}
+            params={
+                "deviceCount": device_count, 
+                "frequencySeconds": frequency_seconds,
+                "batchSize": batch_size
+            }
         )
