@@ -34,11 +34,11 @@ class TestSimulatorService:
         mock_client.post.return_value = True
         service = SimulatorService(mock_client)
 
-        service.update_config(10, 5, 500)
+        service.update_config(10, 5)
 
         mock_client.post.assert_called_once_with(
             "/api/simulator/config",
-            params={"deviceCount": 10, "frequencySeconds": 5, "batchSize": 500}
+            params={"deviceCount": 10, "frequencySeconds": 5}
         )
 
 

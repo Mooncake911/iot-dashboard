@@ -69,23 +69,22 @@ class SimulatorTab:
 
         with col1:
             section_header("Simulation Parameters", icon="⚙️", level=4)
-            c1, c2, c3 = st.columns(3)
+            c1, c2 = st.columns(2)
 
             count = c1.number_input("Devices", 1, 100000, self._status.device_count, key="sim_count_input")
             freq = c2.number_input("Freq (s)", 1, 3600, self._status.frequency_seconds, key="sim_freq_input")
-            batch = c3.number_input("Batch", 1, 100000, self._status.batch_size, key="sim_batch_input")
             
             btn_clicked = st.button("💾 Apply Configuration", width="stretch", key="sim_params_btn")
 
             if btn_clicked:
-                self.update_config(count, freq, batch)
+                self.update_config(count, freq)
                 st.rerun(scope="app")
 
         with col2:
             c1, c2, c3 = st.columns(3)
             c1.metric("Devices", f"{self._status.device_count:,}")
             c2.metric("Frequency", f"1/{self._status.frequency_seconds}s")
-            c3.metric("Batch Size", f"{self._status.batch_size:,}")
+            c3.metric("Batch Size", f"{self._status.batch_size:,}", help="Fixed by global configuration")
             st.metric("Aggregate Load", f"{self._status.total_load:,.1f} msg/s", help="Count / Frequency")
 
     @st.fragment
@@ -107,9 +106,9 @@ class SimulatorTab:
             st.error(f"Error: {str(e)}")
             return {}
 
-    def update_config(self, count: int, frequency: int, batch: int):
+    def update_config(self, count: int, frequency: int):
         try:
-            if self._service.update_config(count, frequency, batch):
+            if self._service.update_config(count, frequency):
                 self._sync_status()
                 st.toast("Configuration updated", icon="✅", duration=2)
             else:

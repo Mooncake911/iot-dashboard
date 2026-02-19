@@ -127,7 +127,7 @@ class AnalyticsServiceTab:
             # Transformation
             df = pd.DataFrame([
                 {
-                    "Time": pd.to_datetime(d.get("timestamp")),
+                    "Time": pd.to_datetime(d.get("timestamp", 0)),
                     "Battery": d.get("metrics", {}).get("battery", {}).get("avg", 0),
                     "Signal": d.get("metrics", {}).get("signal", {}).get("avg", 0),
                     "Online": d.get("metrics", {}).get("onlineDevices", 0),

@@ -74,20 +74,27 @@ class AlertsTab:
 
             df = pd.DataFrame(alerts)
 
+            # Fix Arrow serialization: ensure Object columns are strings if they contain mixed types
+            for col in ["currentValue", "threshold", "ruleType"]:
+                if col in df.columns:
+                    df[col] = df[col].astype(str)
+
             if "severity" in df.columns:
                 df["severity"] = df["severity"].map(
-                    lambda x: f"{self.SEVERITY_EMOJI.get(str(x).lower(), '⚪')} {str(x).upper()}"
+                    lambda x: f"{self.SEVERITY_EMOJI.get(str(x).lower(), '🔴')} {str(x).upper()}"
                 )
 
             st.dataframe(
                 df,
                 width="stretch",
                 hide_index=True,
-                column_order=("severity", "ruleId", "message", "deviceId", "timestamp"),
+                column_order=("severity", "ruleType", "ruleId", "currentValue", "threshold", "deviceId", "timestamp"),
                 column_config={
                     "severity": st.column_config.TextColumn("Severity", width="small"),
+                    "ruleType": st.column_config.TextColumn("Type", width="small"),
                     "ruleId": st.column_config.TextColumn("Rule ID", width="medium"),
-                    "message": st.column_config.TextColumn("Alert Message", width="large"),
+                    "currentValue": st.column_config.TextColumn("Value", width="small"),
+                    "threshold": st.column_config.TextColumn("Threshold", width="small"),
                     "deviceId": st.column_config.TextColumn("Device ID", width="medium"),
                     "timestamp": st.column_config.DatetimeColumn(
                         "Detected At",

@@ -15,5 +15,5 @@ dashboard:
   
   ui:
     refresh-seconds-default: ${REFRESH_SECONDS_DEFAULT:5}
-    alerts-limit-default: ${ALERTS_LIMIT_DEFAULT:50}
+    alerts-limit-default: ${ALERTS_LIMIT_DEFAULT:100}
     analytics-limit-default: ${ANALYTICS_LIMIT_DEFAULT:100}
