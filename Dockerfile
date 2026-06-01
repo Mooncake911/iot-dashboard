@@ -1,25 +1,12 @@
-FROM python:3.12-slim
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
+FROM node:22-alpine AS dashboard-ui
 WORKDIR /app
 
-# Install uv for faster dependency installation
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY package.json package-lock.json* ./
+RUN npm install
 
-# Copy dependency files
-COPY pyproject.toml /app/pyproject.toml
-COPY uv.lock /app/uv.lock
+COPY . .
+ARG VITE_GATEWAY_URL=http://iot-data-gateway:8080
+ENV VITE_GATEWAY_URL=$VITE_GATEWAY_URL
 
-# Install dependencies
-RUN uv sync --frozen --no-dev
-
-# Copy application files
-COPY application.yml /app/application.yml
-COPY app.py /app/app.py
-COPY dashboard /app/dashboard
-
-EXPOSE 8501
-
-CMD ["uv", "run", "streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8501"]
+EXPOSE 5173
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
