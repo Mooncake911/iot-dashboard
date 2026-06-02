@@ -31,10 +31,26 @@ body {
   display: flex;
   gap: 8px;
   margin-bottom: 8px;
+  align-items: flex-start;
 }
 .col {
   display: grid;
   gap: 8px;
+}
+.field {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+}
+.field label,
+.toggle {
+  font-size: 12px;
+  color: #475569;
+}
+.toggle {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
 }
 input,
 select,
@@ -59,6 +75,18 @@ button {
   border: 1px solid #e5eaf0;
   border-radius: 6px;
   padding: 6px 8px;
+}
+.item-main {
+  display: grid;
+  gap: 4px;
+}
+.item-main span {
+  font-size: 12px;
+  color: #475569;
+}
+.item-actions {
+  margin-bottom: 0;
+  flex-shrink: 0;
 }
 pre {
   white-space: pre-wrap;

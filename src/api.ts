@@ -52,5 +52,7 @@ export const api = {
   rules: () => request<Rule[]>("/alerts/rules"),
   createRule: (payload: RulePayload) =>
     request<Rule>("/alerts/rules", { method: "POST", body: JSON.stringify(payload) }),
+  updateRule: (id: string, payload: RulePayload) =>
+    request<Rule>(`/alerts/rules/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   deleteRule: (id: string) => request<void>(`/alerts/rules/${id}`, { method: "DELETE" })
 };
