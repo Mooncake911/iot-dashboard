@@ -7,7 +7,7 @@ export type SimulatorStatus = {
 
 export type AnalyticsStatus = {
   method: string;
-  batchSize: number;
+  windowSeconds: number;
 };
 
 export type Rule = {

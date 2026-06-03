@@ -5,7 +5,7 @@ COPY package.json package-lock.json* ./
 RUN npm install
 
 COPY . .
-ARG VITE_GATEWAY_URL=http://iot-data-gateway:8080
+ARG VITE_GATEWAY_URL=http://localhost:8085
 ENV VITE_GATEWAY_URL=$VITE_GATEWAY_URL
 
 EXPOSE 5173

@@ -37,14 +37,14 @@ export const api = {
   simulatorStop: () => request<void>("/simulator/stop", { method: "POST" }),
 
   analyticsStatus: () => request<AnalyticsStatus>("/analytics/status"),
-  analyticsConfig: (method: string, batchSize: number) =>
+  analyticsConfig: (method: string, windowSeconds: number) =>
     request<string>(
-      `/analytics/config?method=${encodeURIComponent(method)}&batchSize=${batchSize}`,
+      `/analytics/config?method=${encodeURIComponent(method)}&windowSeconds=${windowSeconds}`,
       { method: "POST" }
     ),
-  analyticsHistory: (limit = 20) => request<any[]>(`/analytics/history?limit=${limit}`),
   analyticsLiveSummary: () => request<Record<string, unknown>>("/analytics/live/summary"),
   analyticsLiveByType: () => request<Record<string, unknown>>("/analytics/live/by-type"),
+  analyticsLiveByManufacturer: () => request<Record<string, unknown>>("/analytics/live/by-manufacturer"),
   analyticsReportWindow: (from: string, to: string) =>
     request<Record<string, unknown>>(`/analytics/report/window?from=${from}&to=${to}`),
 

@@ -13,9 +13,9 @@ vi.mock("./api", () => ({
     simulatorStop: vi.fn(),
     analyticsStatus: vi.fn(),
     analyticsConfig: vi.fn(),
-    analyticsHistory: vi.fn(),
     analyticsLiveSummary: vi.fn(),
     analyticsLiveByType: vi.fn(),
+    analyticsLiveByManufacturer: vi.fn(),
     analyticsReportWindow: vi.fn(),
     alerts: vi.fn(),
     rules: vi.fn(),
@@ -32,9 +32,9 @@ const mockedApi = api as unknown as {
   simulatorStop: ReturnType<typeof vi.fn>;
   analyticsStatus: ReturnType<typeof vi.fn>;
   analyticsConfig: ReturnType<typeof vi.fn>;
-  analyticsHistory: ReturnType<typeof vi.fn>;
   analyticsLiveSummary: ReturnType<typeof vi.fn>;
   analyticsLiveByType: ReturnType<typeof vi.fn>;
+  analyticsLiveByManufacturer: ReturnType<typeof vi.fn>;
   analyticsReportWindow: ReturnType<typeof vi.fn>;
   alerts: ReturnType<typeof vi.fn>;
   rules: ReturnType<typeof vi.fn>;
@@ -75,17 +75,17 @@ describe("Dashboard rules workflow", () => {
     });
     mockedApi.analyticsStatus.mockResolvedValue({
       method: "Parallel",
-      batchSize: 100
+      windowSeconds: 30
     });
     mockedApi.analyticsLiveSummary.mockResolvedValue({});
     mockedApi.analyticsLiveByType.mockResolvedValue({});
+    mockedApi.analyticsLiveByManufacturer.mockResolvedValue({});
     mockedApi.analyticsReportWindow.mockResolvedValue({});
     mockedApi.alerts.mockResolvedValue([]);
     mockedApi.simulatorConfig.mockResolvedValue("ok");
     mockedApi.simulatorStart.mockResolvedValue(undefined);
     mockedApi.simulatorStop.mockResolvedValue(undefined);
     mockedApi.analyticsConfig.mockResolvedValue("ok");
-    mockedApi.analyticsHistory.mockResolvedValue([]);
     mockedApi.createRule.mockResolvedValue(makeRule());
     mockedApi.updateRule.mockResolvedValue(makeRule({ id: "rule-1", name: "updated" }));
     mockedApi.deleteRule.mockResolvedValue(undefined);
@@ -96,9 +96,10 @@ describe("Dashboard rules workflow", () => {
 
     render(<App />);
 
+    fireEvent.click(screen.getByRole("tab", { name: "Alerts & Rules" }));
     await screen.findByRole("heading", { name: "Rules" });
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "temperature-high" } });
-    fireEvent.change(screen.getByLabelText("Field"), { target: { value: "TEMPERATURE" } });
+    fireEvent.change(screen.getByLabelText("Field"), { target: { value: "SIGNAL_STRENGTH" } });
     fireEvent.change(screen.getByLabelText("Operator"), { target: { value: "GT" } });
     fireEvent.click(screen.getByRole("button", { name: "Create Rule" }));
 
@@ -106,7 +107,7 @@ describe("Dashboard rules workflow", () => {
       expect(mockedApi.createRule).toHaveBeenCalledWith(
         expect.objectContaining({
           name: "temperature-high",
-          field: "TEMPERATURE",
+          field: "SIGNAL_STRENGTH",
           operator: "GT"
         })
       );
@@ -126,6 +127,7 @@ describe("Dashboard rules workflow", () => {
 
     render(<App />);
 
+    fireEvent.click(screen.getByRole("tab", { name: "Alerts & Rules" }));
     await screen.findByText("battery-low");
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     expect(screen.getByRole("button", { name: "Save Changes" })).toBeInTheDocument();
