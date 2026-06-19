@@ -15,9 +15,6 @@ RUN npm run build
 # ---- Stage 2: Production ----
 FROM nginx:alpine AS dashboard-ui
 
-# Создаём непривилегированного пользователя
-RUN addgroup -g 1001 -S nginx && adduser -S nginx -u 1001
-
 # Копируем собранную статику в папку nginx
 COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
 
