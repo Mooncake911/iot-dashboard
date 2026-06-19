@@ -2,9 +2,9 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-# Копируем package-файлы и устанавливаем зависимости
+# Копируем package-файлы и устанавливаем зависимости (включая dev — нужны для сборки)
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci && npm cache clean --force
 
 # Копируем исходники и собираем статику
 COPY . .
