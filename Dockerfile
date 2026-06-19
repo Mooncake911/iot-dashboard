@@ -15,15 +15,17 @@ RUN npm run build
 # ---- Stage 2: Production ----
 FROM nginx:alpine AS dashboard-ui
 
+# Директории для nginx под непривилегированным пользователем
+RUN mkdir -p /tmp/nginx/client_body /tmp/nginx/proxy /tmp/nginx/fastcgi /tmp/nginx/uwsgi /tmp/nginx/scgi \
+    && chown -R nginx:nginx /tmp/nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx
+
+COPY nginx.conf /etc/nginx/nginx.conf
+
 # Копируем собранную статику в папку nginx
 COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
 
-# (Опционально) кастомный nginx.conf для SPA (если нужно)
-# COPY nginx.conf /etc/nginx/nginx.conf
-
-# Переключаемся на непривилегированного пользователя
 USER nginx
 
-EXPOSE 80
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]
