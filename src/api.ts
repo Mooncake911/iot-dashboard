@@ -7,9 +7,9 @@ import type {
 } from "./types";
 
 const GATEWAY =
-  (import.meta as { env?: Record<string, string> }).env?.VITE_GATEWAY_URL ||
+  (import.meta as { env?: Record<string, string> }).env?.VITE_GATEWAY_URL ??
   "http://localhost:8085";
-const BASE = `${GATEWAY}/api/v1`;
+const BASE = GATEWAY ? `${GATEWAY}/api/v1` : "/api/v1";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${BASE}${path}`, {

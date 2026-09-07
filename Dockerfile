@@ -1,30 +1,31 @@
-# Stage 1: Build
+# ---- Stage 1: Build ----
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-# Копируем package-файлы и устанавливаем зависимости
+# Копируем package-файлы и устанавливаем зависимости (включая dev — нужны для сборки)
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci && npm cache clean --force
 
 # Копируем исходники и собираем статику
 COPY . .
+ARG VITE_GATEWAY_URL=
+ENV VITE_GATEWAY_URL=$VITE_GATEWAY_URL
 RUN npm run build
 
-# Stage 2: Production
+# ---- Stage 2: Production ----
 FROM nginx:alpine AS dashboard-ui
 
-# Создаём непривилегированного пользователя (nginx уже существует, но для надёжности)
-RUN addgroup -g 1001 -S nginx && adduser -S nginx -u 1001
+RUN apk add --no-cache gettext \
+    && mkdir -p /tmp/nginx/client_body /tmp/nginx/proxy /tmp/nginx/fastcgi /tmp/nginx/uwsgi /tmp/nginx/scgi \
+    && chown -R nginx:nginx /tmp/nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx
 
-# Копируем собранные файлы в nginx
+COPY nginx.conf.template /etc/nginx/nginx.conf.template
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
 COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
 
-# Копируем кастомный конфиг nginx (опционально)
-# COPY nginx.conf
+ARG SPRING_INTERNAL_PORT=8080
+EXPOSE ${SPRING_INTERNAL_PORT}
 
-# Переключаемся на непривилегированного пользователя
-USER nginx
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
