@@ -13,6 +13,11 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
-    globals: true
+    globals: true,
+    coverage: {
+      provider: "v8",
+      // lcov is required by SonarCloud (sonar.javascript.lcov.reportPaths).
+      reporter: ["text", "lcov"]
+    }
   }
 });
