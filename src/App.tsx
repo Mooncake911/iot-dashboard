@@ -329,6 +329,12 @@ export default function App() {
       <header className="top">
         <h1>IoT Dashboard</h1>
         <div className="header-actions">
+          <a className="secondary" href="/grafana/" target="_blank" rel="noreferrer">
+            Grafana
+          </a>
+          <a className="secondary" href="/prometheus/" target="_blank" rel="noreferrer">
+            Prometheus
+          </a>
           <button className="secondary" onClick={() => void refreshDashboard()}>
             Refresh
           </button>

@@ -134,6 +134,15 @@ button {
 button.secondary {
   background: #f8fafc;
 }
+.header-actions a.secondary {
+  border: 1px solid #c7d0db;
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: #f8fafc;
+  color: #0f172a;
+  text-decoration: none;
+  font-size: 13px;
+}
 button.success {
   background: #dcfce7;
   border-color: #86efac;
